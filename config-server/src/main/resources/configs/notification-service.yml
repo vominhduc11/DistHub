@@ -1,0 +1,12 @@
+server:
+  port: ${SERVER_PORT}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+    register-with-eureka: ${EUREKA_CLIENT_REGISTER_WITH_EUREKA}
+    fetch-registry: ${EUREKA_CLIENT_FETCH_REGISTRY}
+  instance:
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME}

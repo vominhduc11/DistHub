@@ -1,0 +1,98 @@
+###
+# DistHub Microservices API Test
+###
+
+@apiGateway = http://localhost:8081
+
+###
+### EUREKA DISCOVERY ###
+###
+
+# Eureka Dashboard
+GET http://localhost:8761
+
+###
+### AUTHENTICATION ###
+###
+
+# Register user
+POST {{apiGateway}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "password123",
+  "email": "test@example.com"
+}
+
+###
+
+# Login user
+POST {{apiGateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser", 
+  "password": "password123"
+}
+
+###
+
+# Get JWKS public keys
+GET {{apiGateway}}/api/auth/.well-known/jwks.json
+
+###
+### PROTECTED ENDPOINTS ###
+###
+
+# Validate JWT (any authenticated user)
+GET {{apiGateway}}/api/auth/validate
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+###
+
+# Admin test endpoint (requires ADMIN role)
+GET {{apiGateway}}/api/admin/test
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+###
+
+# Dealer endpoint (requires DEALER role) 
+GET {{apiGateway}}/api/dealer/dashboard
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+###
+
+# Customer endpoint (requires CUSTOMER role)
+GET {{apiGateway}}/api/customer/profile
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+###
+### ERROR TESTS ###
+###
+
+# Test 404
+GET {{apiGateway}}/api/nonexistent
+
+###
+
+# Test 401 Unauthorized
+GET {{apiGateway}}/api/auth/validate
+# No Authorization header
+
+###
+
+# Test 403 Forbidden (wrong role)
+GET {{apiGateway}}/api/admin/test
+Authorization: Bearer USER_ROLE_JWT_TOKEN
+
+###
+### INSTRUCTIONS ###
+###
+
+# 1. docker-compose up -d
+# 2. Register user -> Login -> Get JWT token
+# 3. Replace YOUR_JWT_TOKEN_HERE with actual token
+# 4. Test protected endpoints with different roles
+
+###

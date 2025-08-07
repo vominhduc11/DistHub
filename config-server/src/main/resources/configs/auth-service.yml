@@ -1,0 +1,33 @@
+server:
+  port: ${SERVER_PORT}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://dishub_postgres:5432/auth_db}
+    username: ${SPRING_DATASOURCE_USERNAME:voduc}
+    password: ${SPRING_DATASOURCE_PASSWORD:voduc123}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    database-platform: ${SPRING_JPA_DATABASE_PLATFORM:org.hibernate.dialect.PostgreSQLDialect}
+    show-sql: ${SPRING_JPA_SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE}
+    register-with-eureka: ${EUREKA_CLIENT_REGISTER_WITH_EUREKA}
+    fetch-registry: ${EUREKA_CLIENT_FETCH_REGISTRY}
+  instance:
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME}
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

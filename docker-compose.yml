@@ -6,7 +6,7 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - ./config-server.jar:/app/config-server.jar
+      - ./build/jars/config-server.jar:/app/config-server.jar
     working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=native
@@ -30,7 +30,7 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ./api-gateway.jar:/app/api-gateway.jar
+      - ./build/jars/api-gateway.jar:/app/api-gateway.jar
     working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=native
@@ -65,7 +65,7 @@ services:
     ports:
       - "8761:8761"
     volumes:
-      - ./discovery-service.jar:/app/discovery-service.jar
+      - ./build/jars/discovery-service.jar:/app/discovery-service.jar
     working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=native
@@ -100,7 +100,7 @@ services:
     ports:
       - "8082:8082"
     volumes:
-      - ./auth-service.jar:/app/auth-service.jar
+      - ./build/jars/auth-service.jar:/app/auth-service.jar
     working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=native
@@ -119,6 +119,7 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
       - SPRING_JPA_SHOW_SQL=true
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka1:9092,kafka2:9093,kafka3:9094
     depends_on:
       config-server:
         condition: service_healthy
@@ -137,7 +138,7 @@ services:
     ports:
       - "8083:8083"
     volumes:
-      - ./user-service.jar:/app/user-service.jar
+      - ./build/jars/user-service.jar:/app/user-service.jar
     working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=native
@@ -174,7 +175,7 @@ services:
     ports:
       - "8084:8084"
     volumes:
-      - ./notification-service.jar:/app/notification-service.jar
+      - ./build/jars/notification-service.jar:/app/notification-service.jar
     working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=native
@@ -208,6 +209,43 @@ services:
     networks:
       - backend-network
     command: java -jar notification-service.jar
+
+  language-service:
+    image: openjdk:17-jdk-slim
+    container_name: dishub_language_service
+    ports:
+      - "8085:8085"
+    volumes:
+      - ./build/jars/language-service.jar:/app/language-service.jar
+    working_dir: /app
+    environment:
+      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_APPLICATION_NAME=language-service
+      - SERVER_PORT=8085
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-service:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - EUREKA_INSTANCE_HOSTNAME=language-service
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://dishub_postgres:5432/language_db
+      - SPRING_DATASOURCE_USERNAME=voduc
+      - SPRING_DATASOURCE_PASSWORD=voduc123
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+      - SPRING_JPA_SHOW_SQL=true
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - backend-network
+    command: java -jar language-service.jar
 
   postgres:
     image: postgres:15
@@ -346,12 +384,16 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181,zookeeper2:2182,zookeeper3:2183
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_IN_SYNC_REPLICAS: 2
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_IN_SYNC_REPLICAS: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
     volumes:
       - kafka1_data:/var/lib/kafka/data
     restart: unless-stopped
@@ -370,12 +412,16 @@ services:
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181,zookeeper2:2182,zookeeper3:2183
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_IN_SYNC_REPLICAS: 2
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_IN_SYNC_REPLICAS: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
     volumes:
       - kafka2_data:/var/lib/kafka/data
     restart: unless-stopped
@@ -394,12 +440,16 @@ services:
     environment:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181,zookeeper2:2182,zookeeper3:2183
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9094
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_IN_SYNC_REPLICAS: 2
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9094
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_IN_SYNC_REPLICAS: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
     volumes:
       - kafka3_data:/var/lib/kafka/data
     restart: unless-stopped

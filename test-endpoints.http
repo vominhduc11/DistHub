@@ -3,96 +3,172 @@
 ###
 
 @apiGateway = http://localhost:8081
+@configServer = http://localhost:8888
+@eurekaServer = http://localhost:8761
+
+# Variables for tokens (replace after login)
+@adminToken = YOUR_ADMIN_TOKEN_HERE
 
 ###
-### EUREKA DISCOVERY ###
+### INFRASTRUCTURE SERVICES ###
 ###
 
 # Eureka Dashboard
-GET http://localhost:8761
-
-###
-### AUTHENTICATION ###
-###
-
-# Register user
-POST {{apiGateway}}/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "testuser",
-  "password": "password123",
-  "email": "test@example.com"
-}
+GET {{eurekaServer}}
 
 ###
 
-# Login user
+# Config Server Health
+GET {{configServer}}/actuator/health
+
+###
+
+# Get Config for auth-service
+GET {{configServer}}/auth-service/default
+
+###
+
+# Get Config for user-service
+GET {{configServer}}/user-service/default
+
+###
+### AUTH SERVICE ###
+###
+
+# Login as Admin
 POST {{apiGateway}}/api/auth/login
 Content-Type: application/json
 
 {
-  "username": "testuser", 
+  "username": "admin",
   "password": "password123"
 }
 
 ###
 
+
+# Validate JWT Token
+GET {{apiGateway}}/api/auth/validate?token={{adminToken}}
+
+###
+
+
 # Get JWKS public keys
 GET {{apiGateway}}/api/auth/.well-known/jwks.json
 
 ###
-### PROTECTED ENDPOINTS ###
-###
 
-# Validate JWT (any authenticated user)
-GET {{apiGateway}}/api/auth/validate
-Authorization: Bearer YOUR_JWT_TOKEN_HERE
+# Reseller Registration
+POST {{apiGateway}}/api/auth/register-reseller
+Content-Type: application/json
 
-###
-
-# Admin test endpoint (requires ADMIN role)
-GET {{apiGateway}}/api/admin/test
-Authorization: Bearer YOUR_JWT_TOKEN_HERE
-
-###
-
-# Dealer endpoint (requires DEALER role) 
-GET {{apiGateway}}/api/dealer/dashboard
-Authorization: Bearer YOUR_JWT_TOKEN_HERE
+{
+  "username": "reseller004",
+  "password": "password123",
+  "name": "XYZ Reseller Company",
+  "address": "456 Commerce Avenue",
+  "district": "District 4",
+  "city": "Ho Chi Minh City",
+  "phone": "+84989554380",
+  "email": "reseller004@example.com"
+}
 
 ###
-
-# Customer endpoint (requires CUSTOMER role)
-GET {{apiGateway}}/api/customer/profile
-Authorization: Bearer YOUR_JWT_TOKEN_HERE
-
-###
-### ERROR TESTS ###
+### USER SERVICE ###
 ###
 
-# Test 404
-GET {{apiGateway}}/api/nonexistent
+# Get All Resellers
+GET {{apiGateway}}/api/user/resellers
 
 ###
 
-# Test 401 Unauthorized
-GET {{apiGateway}}/api/auth/validate
-# No Authorization header
+# Create Reseller (Direct to User Service)
+POST {{apiGateway}}/api/user/resellers
+Content-Type: application/json
+
+{
+  "accountId": 999,
+  "name": "Direct Test Company",
+  "address": "999 Direct Street",
+  "district": "Test District",
+  "city": "Test City",
+  "phone": "0999999999",
+  "email": "direct.test@example.com"
+}
 
 ###
 
-# Test 403 Forbidden (wrong role)
-GET {{apiGateway}}/api/admin/test
-Authorization: Bearer USER_ROLE_JWT_TOKEN
+
+### ERROR HANDLING TESTS ###
+###
+
+# Test 400 - Invalid login request  
+POST {{apiGateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "",
+  "password": ""
+}
+
+###
+
+# Test 400 - Invalid reseller registration (missing required fields)
+POST {{apiGateway}}/api/auth/register-reseller
+Content-Type: application/json
+
+{
+  "username": "test",
+  "password": ""
+}
+
+###
+
+# Test 409 - Duplicate username
+POST {{apiGateway}}/api/auth/register-reseller
+Content-Type: application/json
+
+{
+  "username": "reseller003",
+  "password": "password123",
+  "name": "Duplicate Test Company",
+  "address": "123 Duplicate Street",
+  "district": "District 1",
+  "city": "Test City",
+  "phone": "0123456789",
+  "email": "duplicate@example.com"
+}
 
 ###
 ### INSTRUCTIONS ###
 ###
 
-# 1. docker-compose up -d
-# 2. Register user -> Login -> Get JWT token
-# 3. Replace YOUR_JWT_TOKEN_HERE with actual token
-# 4. Test protected endpoints with different roles
+# SETUP STEPS:
+# 1. Run: docker-compose up -d
+# 2. Wait for all services to start (check Eureka dashboard)
+# 3. Test login endpoint first to get JWT token
+# 4. Copy token to @adminToken variable at top of file
+# 5. Test other endpoints with token
+
+# TEST ACCOUNTS:
+# - admin / password123 (ADMIN role)
+# - customer / customerpass (CUSTOMER role) 
+# - dealer / dealerpass (DEALER role)
+
+# SERVICE PORTS:
+# - API Gateway: 8081 (main entry point)
+# - Config Server: 8888
+# - Eureka Server: 8761
+
+# API ENDPOINTS:
+# Auth Service:
+#   - POST /api/auth/login - Login với username/password
+#   - GET /api/auth/validate - Validate JWT token
+#   - GET /api/auth/.well-known/jwks.json - Get public keys
+#   - POST /api/auth/register-reseller - Register new reseller (requires username, password, name, address, district, city, phone, email)
+#
+# User Service:
+#   - GET /api/user/resellers - Get all resellers
+#   - POST /api/user/resellers - Create reseller directly (requires accountId)
 
 ###

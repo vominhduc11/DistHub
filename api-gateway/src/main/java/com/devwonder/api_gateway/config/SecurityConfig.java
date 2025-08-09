@@ -23,6 +23,8 @@ public class SecurityConfig {
             .cors(cors -> cors.disable()) // CORS handled by Spring Cloud Gateway
             .authorizeExchange(exchanges -> exchanges
                 .pathMatchers("/api/auth/**", "/api/public/**", "/api/auth/.well-known/**").permitAll()
+                .pathMatchers(HttpMethod.POST, "/api/user/resellers").permitAll()
+                .pathMatchers(HttpMethod.GET, "/api/user/resellers").permitAll()
                 .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow CORS preflight
                 .pathMatchers("/api/admin/**").hasRole("ADMIN") // Admin role required
                 .pathMatchers("/api/dealer/**").hasRole("DEALER") // Dealer role required

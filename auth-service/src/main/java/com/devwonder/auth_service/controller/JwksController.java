@@ -27,23 +27,16 @@ public class JwksController {
 
     @GetMapping("/auth/.well-known/jwks.json")
     public ResponseEntity<Map<String, Object>> jwks() {
-        try {
-            RSAPublicKey publicKey = rsaKeys.getPublicKey();
-            
-            Map<String, Object> jwk = createJwkFromPublicKey(publicKey);
-            Map<String, Object> jwks = Map.of("keys", List.of(jwk));
-            
-            log.debug("JWKS endpoint accessed, returning public key with kid: {}", SecurityConstants.JWT_KEY_ID);
-            
-            return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofHours(1))) // Cache for 1 hour
-                .body(jwks);
-                
-        } catch (Exception e) {
-            log.error("Error generating JWKS response", e);
-            return ResponseEntity.internalServerError()
-                .body(Map.of("error", "Unable to generate JWKS", "timestamp", System.currentTimeMillis()));
-        }
+        RSAPublicKey publicKey = rsaKeys.getPublicKey();
+        
+        Map<String, Object> jwk = createJwkFromPublicKey(publicKey);
+        Map<String, Object> jwks = Map.of("keys", List.of(jwk));
+        
+        log.debug("JWKS endpoint accessed, returning public key with kid: {}", SecurityConstants.JWT_KEY_ID);
+        
+        return ResponseEntity.ok()
+            .cacheControl(CacheControl.maxAge(Duration.ofHours(1))) // Cache for 1 hour
+            .body(jwks);
     }
 
     private Map<String, Object> createJwkFromPublicKey(RSAPublicKey publicKey) {

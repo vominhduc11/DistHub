@@ -25,9 +25,3 @@ eureka:
   instance:
     prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS}
     hostname: ${EUREKA_INSTANCE_HOSTNAME}
-
-logging:
-  level:
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

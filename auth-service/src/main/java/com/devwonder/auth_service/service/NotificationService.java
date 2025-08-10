@@ -1,6 +1,7 @@
 package com.devwonder.auth_service.service;
 
 import com.devwonder.auth_service.dto.EmailNotificationEvent;
+import com.devwonder.auth_service.dto.WebSocketNotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -14,6 +15,7 @@ public class NotificationService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     
     private static final String EMAIL_NOTIFICATION_TOPIC = "email-notifications";
+    private static final String WEBSOCKET_NOTIFICATION_TOPIC = "websocket-notifications";
 
     public void sendResellerWelcomeEmail(String email, String name, String username) {
         try {
@@ -25,12 +27,31 @@ public class NotificationService {
         }
     }
 
+    public void sendResellerRegistrationNotification(String userId, String userName) {
+        try {
+            WebSocketNotificationEvent event = WebSocketNotificationEvent.createResellerRegistrationEvent(userId, userName);
+            kafkaTemplate.send(WEBSOCKET_NOTIFICATION_TOPIC, userId, event);
+            log.info("WebSocket notification event sent for reseller registration: {} (userId: {})", userName, userId);
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket notification event for reseller: {}", userName, e);
+        }
+    }
+
     public void sendEmailNotification(EmailNotificationEvent event) {
         try {
             kafkaTemplate.send(EMAIL_NOTIFICATION_TOPIC, event.getUsername(), event);
             log.info("Email notification event sent: {} to {}", event.getEventType(), event.getTo());
         } catch (Exception e) {
             log.error("Failed to send email notification event: {}", event.getEventType(), e);
+        }
+    }
+
+    public void sendWebSocketNotification(WebSocketNotificationEvent event) {
+        try {
+            kafkaTemplate.send(WEBSOCKET_NOTIFICATION_TOPIC, event.getUserId(), event);
+            log.info("WebSocket notification event sent: {} to user {}", event.getEventType(), event.getUserId());
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket notification event: {}", event.getEventType(), e);
         }
     }
 }

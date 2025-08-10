@@ -95,6 +95,7 @@ public class AccountService {
     @Transactional
     public Map<String, Object> createResellerAccount(ResellerRegistrationRequest request) {
         log.info("Creating reseller account for username: {}", request.getUsername());
+        log.info("DEBUG: Starting createResellerAccount method");
         
         validateUniqueUsername(request.getUsername());
         
@@ -102,6 +103,8 @@ public class AccountService {
             Account account = createAccount(request);
             Long resellerId = createResellerProfile(account.getId(), request);
             sendWelcomeEmail(request);
+            log.info("About to send registration notification for account: {} username: {}", account.getId(), request.getUsername());
+            sendRegistrationNotification(account.getId(), request.getUsername());
             
             return buildRegistrationResult(account.getId(), resellerId);
         } catch (FeignException e) {
@@ -181,6 +184,20 @@ public class AccountService {
         } catch (Exception e) {
             log.warn("Failed to send welcome email for reseller: {}, but registration succeeded", 
                      request.getUsername(), e);
+        }
+    }
+    
+    private void sendRegistrationNotification(Long accountId, String username) {
+        log.info("Starting sendRegistrationNotification for account: {} username: {}", accountId, username);
+        try {
+            notificationService.sendResellerRegistrationNotification(
+                accountId.toString(),
+                username
+            );
+            log.info("Successfully called sendResellerRegistrationNotification for account: {}", accountId);
+        } catch (Exception e) {
+            log.warn("Failed to send registration notification for reseller: {}, but registration succeeded", 
+                     username, e);
         }
     }
     

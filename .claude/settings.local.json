@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git push:*)",
       "Bash(./mvnw:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(docker-compose stop:*)"
     ],
     "deny": []
   }

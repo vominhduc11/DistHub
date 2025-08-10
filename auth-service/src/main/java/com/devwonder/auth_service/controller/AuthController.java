@@ -76,14 +76,14 @@ public class AuthController {
     }
 
     @PostMapping("/register-reseller")
-    public ResponseEntity<?> registerReseller(@Valid @RequestBody ResellerRegistrationRequest registrationRequest, HttpServletRequest request) {
-        String clientIp = getClientIpAddress(request);
+    public ResponseEntity<?> registerReseller(@Valid @RequestBody ResellerRegistrationRequest request, 
+                                            HttpServletRequest httpRequest) {
+        String clientIp = getClientIpAddress(httpRequest);
         log.info("Reseller registration attempt from IP: {}", clientIp);
         
-        // Create account and reseller profile
-        Map<String, Object> result = accountService.createResellerAccount(registrationRequest);
+        Map<String, Object> result = accountService.createResellerAccount(request);
         
-        log.info("Reseller registration successful for: {} from IP: {}", registrationRequest.getEmail(), clientIp);
+        log.info("Reseller registration successful for: {} from IP: {}", request.getEmail(), clientIp);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
             "message", "Reseller registration successful",
             "accountId", result.get("accountId"),

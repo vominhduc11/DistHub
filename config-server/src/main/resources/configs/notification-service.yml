@@ -10,3 +10,22 @@ eureka:
   instance:
     prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS}
     hostname: ${EUREKA_INSTANCE_HOSTNAME}
+
+spring:
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka1:9092,kafka2:9093,kafka3:9094}
+  
+  # Email configuration
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:vominhduc760@gmail.com}
+    password: ${MAIL_PASSWORD:agcbtolwkdbbjwoi}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            trust: smtp.gmail.com

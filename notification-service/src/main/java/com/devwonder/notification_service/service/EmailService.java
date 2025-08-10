@@ -1,68 +1,70 @@
 package com.devwonder.notification_service.service;
 
 import com.devwonder.notification_service.dto.EmailNotificationEvent;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class EmailService {
+
+    private final JavaMailSender emailSender;
+    
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
     public void sendResellerWelcomeEmail(EmailNotificationEvent event) {
         log.info("Sending reseller welcome email to: {} for user: {}", event.getTo(), event.getUsername());
-        
-        try {
-            // TODO: Implement actual email sending logic
-            // For now, we'll just simulate email sending
-            simulateEmailSending(event);
-            
-            log.info("Successfully sent welcome email to reseller: {} ({})", event.getRecipientName(), event.getTo());
-        } catch (Exception e) {
-            log.error("Failed to send welcome email to reseller: {} ({})", event.getRecipientName(), event.getTo(), e);
-            throw new RuntimeException("Email sending failed", e);
-        }
+        sendActualEmail(event);
+        log.info("Successfully sent welcome email to reseller: {} ({})", event.getRecipientName(), event.getTo());
     }
 
     public void sendEmail(EmailNotificationEvent event) {
         log.info("Sending email: {} to: {}", event.getSubject(), event.getTo());
-        
+        sendActualEmail(event);
+        log.info("Successfully sent email: {} to: {}", event.getEventType(), event.getTo());
+    }
+
+    private void sendActualEmail(EmailNotificationEvent event) {
         try {
-            simulateEmailSending(event);
-            log.info("Successfully sent email: {} to: {}", event.getEventType(), event.getTo());
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(event.getTo());
+            message.setSubject(event.getSubject());
+            message.setText(createEmailContent(event));
+            
+            emailSender.send(message);
+            log.info("Email sent successfully to: {}", event.getTo());
         } catch (Exception e) {
-            log.error("Failed to send email: {} to: {}", event.getEventType(), event.getTo(), e);
+            log.error("Failed to send email to: {}", event.getTo(), e);
             throw new RuntimeException("Email sending failed", e);
         }
     }
 
-    private void simulateEmailSending(EmailNotificationEvent event) {
-        // Simulate email processing time
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        
-        // Log email content simulation
-        log.info("📧 EMAIL SIMULATION 📧");
-        log.info("To: {}", event.getTo());
-        log.info("Subject: {}", event.getSubject());
-        log.info("Template: {}", event.getTemplateName());
-        log.info("Recipient: {}", event.getRecipientName());
-        log.info("Username: {}", event.getUsername());
-        log.info("Event Type: {}", event.getEventType());
-        log.info("Timestamp: {}", event.getTimestamp());
-        
+    private String createEmailContent(EmailNotificationEvent event) {
         if ("RESELLER_REGISTRATION".equals(event.getEventType())) {
-            log.info("📧 Email Content:");
-            log.info("Dear {},", event.getRecipientName());
-            log.info("Welcome to DistHub! Your reseller account has been successfully created.");
-            log.info("Username: {}", event.getUsername());
-            log.info("You can now log in and start using our platform.");
-            log.info("Best regards,");
-            log.info("DistHub Team");
+            return String.format(
+                "Dear %s,\n\n" +
+                "Welcome to DistHub! Your reseller account has been successfully created.\n\n" +
+                "Username: %s\n" +
+                "Email: %s\n\n" +
+                "You can now log in and start using our platform.\n\n" +
+                "Best regards,\n" +
+                "DistHub Team\n\n" +
+                "---\n" +
+                "This is an automated message. Please do not reply to this email.",
+                event.getRecipientName(),
+                event.getUsername(),
+                event.getTo()
+            );
         }
         
-        log.info("📧 END EMAIL SIMULATION 📧");
+        return "Thank you for using DistHub!\n\nBest regards,\nDistHub Team";
     }
+
 }

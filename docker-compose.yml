@@ -198,6 +198,10 @@ services:
       - SPRING_REDIS_HOST=dishub_redis
       - SPRING_REDIS_PORT=6379
       - SPRING_REDIS_PASSWORD=voduc123
+      - MAIL_HOST=smtp.gmail.com
+      - MAIL_PORT=587
+      - MAIL_USERNAME=vominhduc760@gmail.com
+      - MAIL_PASSWORD=agcbtolwkdbbjwoi
     depends_on:
       config-server:
         condition: service_healthy
@@ -479,7 +483,7 @@ networks:
     driver: bridge
   backend-network:
     driver: bridge
-    internal: true  # Internal network - no external access
+    # Removed internal: true to allow internet access for email services
 
 volumes:
   postgres_data:

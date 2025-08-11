@@ -1,5 +1,6 @@
 package com.devwonder.api_gateway.filter;
 
+import com.devwonder.api_gateway.constant.SecurityConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -17,10 +18,6 @@ import org.springframework.security.core.context.SecurityContext;
 @Component
 public class JwtClaimsGlobalFilter implements GlobalFilter, Ordered {
 
-    private static final String USER_ID_HEADER = "X-User-Id";
-    private static final String USER_ROLE_HEADER = "X-User-Role";
-    private static final String REQUEST_ID_HEADER = "X-Request-Id";
-
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         // Add request ID for tracing
@@ -36,22 +33,34 @@ public class JwtClaimsGlobalFilter implements GlobalFilter, Ordered {
                     
                     // Extract claims from JWT with null safety
                     String username = jwt.getClaimAsString("sub");
-                    String role = jwt.getClaimAsString("role");
                     String issuer = jwt.getClaimAsString("iss");
                     
-                    log.debug("Processing JWT for user: {} with role: {} from issuer: {}", 
-                               username, role, issuer);
+                    // Extract all roles
+                    Object rolesObj = jwt.getClaim("roles");
+                    String rolesHeader = "";
+                    String primaryRole = "";
+                    
+                    if (rolesObj instanceof java.util.List) {
+                        @SuppressWarnings("unchecked")
+                        java.util.List<String> rolesList = (java.util.List<String>) rolesObj;
+                        rolesHeader = String.join(",", rolesList);
+                        primaryRole = rolesList.isEmpty() ? "CUSTOMER" : rolesList.get(0);
+                    } else {
+                        rolesHeader = "CUSTOMER";
+                        primaryRole = "CUSTOMER";
+                    }
                     
                     // Validate issuer
-                    if (!"nexhub-auth-service".equals(issuer)) {
+                    if (!SecurityConstants.EXPECTED_ISSUER.equals(issuer)) {
                         log.warn("Invalid JWT issuer: {} for user: {}", issuer, username);
                     }
                     
                     // Add JWT claims to headers for downstream services
                     ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                        .header(USER_ID_HEADER, username != null ? username : "")
-                        .header(USER_ROLE_HEADER, role != null ? role : "")
-                        .header(REQUEST_ID_HEADER, requestId)
+                        .header(SecurityConstants.USER_ID_HEADER, username != null ? username : "")
+                        .header(SecurityConstants.USER_ROLE_HEADER, primaryRole) // First role as primary
+                        .header("X-User-Roles", rolesHeader) // All roles comma-separated
+                        .header(SecurityConstants.REQUEST_ID_HEADER, requestId)
                         .build();
                     
                     return exchange.mutate().request(modifiedRequest).build();
@@ -67,7 +76,7 @@ public class JwtClaimsGlobalFilter implements GlobalFilter, Ordered {
     }
     private ServerWebExchange addRequestIdToExchange(ServerWebExchange exchange, String requestId) {
         ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-            .header(REQUEST_ID_HEADER, requestId)
+            .header(SecurityConstants.REQUEST_ID_HEADER, requestId)
             .build();
         return exchange.mutate().request(modifiedRequest).build();
     }

@@ -12,10 +12,22 @@ public class KafkaTopicConfig {
     @Bean
     public NewTopic emailNotificationTopic() {
         return TopicBuilder.name("email-notifications")
-                .partitions(3)           // 3 partitions for better parallel processing
-                .replicas(1)             // 1 replica
+                .partitions(3)
+                .replicas(3)
                 .config(TopicConfig.CLEANUP_POLICY_CONFIG, "delete")
                 .config(TopicConfig.RETENTION_MS_CONFIG, "604800000") // 7 days retention
+                .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, "2") // Minimum 2 replicas in sync
+                .build();
+    }
+
+    @Bean
+    public NewTopic webSocketNotificationTopic() {
+        return TopicBuilder.name("websocket-notifications")
+                .partitions(3)
+                .replicas(3)
+                .config(TopicConfig.CLEANUP_POLICY_CONFIG, "delete")
+                .config(TopicConfig.RETENTION_MS_CONFIG, "604800000") // 7 days retention
+                .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, "2") // Minimum 2 replicas in sync
                 .build();
     }
 }

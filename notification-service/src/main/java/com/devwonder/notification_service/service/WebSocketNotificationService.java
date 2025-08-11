@@ -14,35 +14,29 @@ public class WebSocketNotificationService {
     private final SimpMessagingTemplate messagingTemplate;
 
     public void sendResellerRegistrationNotification(WebSocketNotificationEvent event) {
+        // Send personal notification to the specific user
+        sendUserNotification(event.getUserId(), event);
+        
+        // Also send broadcast notification to all connected users (for demo purposes)
+        sendBroadcastNotification(event);
+    }
+
+    public void sendUserNotification(String username, WebSocketNotificationEvent event) {
         try {
-            String destination = "/topic/notifications/" + event.getUserId();
-            messagingTemplate.convertAndSend(destination, event);
+            // Send to user-specific queue - Spring will automatically route to authenticated user
+            messagingTemplate.convertAndSendToUser(username, "/queue/notifications", event);
             
-            log.info("WebSocket notification sent successfully to user: {} at destination: {}", 
-                    event.getUserId(), destination);
+            log.info("WebSocket notification sent successfully to user: {}", username);
         } catch (Exception e) {
-            log.error("Failed to send WebSocket notification to user: {}", event.getUserId(), e);
+            log.error("Failed to send WebSocket notification to user: {}", username, e);
             throw e;
         }
     }
 
-    public void sendNotification(WebSocketNotificationEvent event) {
+    public void sendBroadcastNotification(WebSocketNotificationEvent event) {
         try {
-            String destination = "/topic/notifications/" + event.getUserId();
-            messagingTemplate.convertAndSend(destination, event);
-            
-            log.info("WebSocket notification sent successfully to user: {} at destination: {}", 
-                    event.getUserId(), destination);
-        } catch (Exception e) {
-            log.error("Failed to send WebSocket notification to user: {}", event.getUserId(), e);
-            throw e;
-        }
-    }
-
-    public void broadcastNotification(WebSocketNotificationEvent event) {
-        try {
-            String destination = "/topic/notifications/broadcast";
-            messagingTemplate.convertAndSend(destination, event);
+            // Send to all authenticated users
+            messagingTemplate.convertAndSend("/topic/notifications/broadcast", event);
             
             log.info("Broadcast WebSocket notification sent successfully: {}", event.getEventType());
         } catch (Exception e) {

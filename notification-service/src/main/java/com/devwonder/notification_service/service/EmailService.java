@@ -19,15 +19,13 @@ public class EmailService {
     private String fromEmail;
 
     public void sendResellerWelcomeEmail(EmailNotificationEvent event) {
-        log.info("Sending reseller welcome email to: {} for user: {}", event.getTo(), event.getUsername());
         sendActualEmail(event);
-        log.info("Successfully sent welcome email to reseller: {} ({})", event.getRecipientName(), event.getTo());
+        log.info("Welcome email sent to: {}", event.getTo());
     }
 
     public void sendEmail(EmailNotificationEvent event) {
-        log.info("Sending email: {} to: {}", event.getSubject(), event.getTo());
         sendActualEmail(event);
-        log.info("Successfully sent email: {} to: {}", event.getEventType(), event.getTo());
+        log.info("Email sent to: {}", event.getTo());
     }
 
     private void sendActualEmail(EmailNotificationEvent event) {
@@ -39,7 +37,6 @@ public class EmailService {
             message.setText(createEmailContent(event));
             
             emailSender.send(message);
-            log.info("Email sent successfully to: {}", event.getTo());
         } catch (Exception e) {
             log.error("Failed to send email to: {}", event.getTo(), e);
             throw new RuntimeException("Email sending failed", e);
@@ -47,24 +44,29 @@ public class EmailService {
     }
 
     private String createEmailContent(EmailNotificationEvent event) {
-        if ("RESELLER_REGISTRATION".equals(event.getEventType())) {
-            return String.format(
-                "Dear %s,\n\n" +
-                "Welcome to DistHub! Your reseller account has been successfully created.\n\n" +
-                "Username: %s\n" +
-                "Email: %s\n\n" +
-                "You can now log in and start using our platform.\n\n" +
-                "Best regards,\n" +
-                "DistHub Team\n\n" +
-                "---\n" +
-                "This is an automated message. Please do not reply to this email.",
+        return switch (event.getEventType()) {
+            case "RESELLER_REGISTRATION" -> String.format(
+                """
+                Dear %s,
+                
+                Welcome to DistHub! Your reseller account has been successfully created.
+                
+                Username: %s
+                Email: %s
+                
+                You can now log in and start using our platform.
+                
+                Best regards,
+                DistHub Team
+                
+                ---
+                This is an automated message. Please do not reply to this email.
+                """,
                 event.getRecipientName(),
                 event.getUsername(),
                 event.getTo()
             );
-        }
-        
-        return "Thank you for using DistHub!\n\nBest regards,\nDistHub Team";
+            default -> "Thank you for using DistHub!\n\nBest regards,\nDistHub Team";
+        };
     }
-
 }

@@ -1,51 +1,22 @@
-package com.devwonder.auth_service.util;
+package com.devwonder.notification_service.util;
 
-import com.devwonder.auth_service.config.RSAKeyProperties;
-import com.devwonder.auth_service.constant.SecurityConstants;
+import com.devwonder.notification_service.config.RSAKeyProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
+
     private final RSAKeyProperties rsaKeys;
-
-    public JwtUtil(RSAKeyProperties rsaKeys) {
-        this.rsaKeys = rsaKeys;
-    }
-
-    public String generateToken(String username, String role) {
-        return generateToken(username, List.of(role));
-    }
-
-    public String generateToken(String username, List<String> roles) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", roles);
-        claims.put("iss", "nexhub-auth-service");
-        claims.put("aud", "nexhub-api-gateway");
-        
-        return createToken(claims, username);
-    }
-
-    private String createToken(Map<String, Object> claims, String subject) {
-        long now = System.currentTimeMillis();
-        
-        return Jwts.builder()
-                .claims(claims)
-                .subject(subject)
-                .issuedAt(new Date(now))
-                .expiration(new Date(now + SecurityConstants.JWT_EXPIRATION_MS))
-                .signWith(rsaKeys.getPrivateKey(), Jwts.SIG.RS256)
-                .compact();
-    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

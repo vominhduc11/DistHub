@@ -63,39 +63,10 @@ public class AccountService {
         return accountRepository.existsByUsername(username);
     }
 
-    public void createAccount(Account account) {
-        if (existsByUsername(account.getUsername())) {
-            throw new IllegalArgumentException("Account already exists: " + account.getUsername());
-        }
-        
-        // Encode password before saving
-        if (account.getPassword() != null && !account.getPassword().startsWith("$2a$")) {
-            account.setPassword(passwordEncoder.encode(account.getPassword()));
-        }
-        
-        accountRepository.save(account);
-        log.info("Account created successfully: {}", account.getUsername());
-    }
-
-    public void assignRoleToAccount(String username, String roleName) {
-        Optional<Account> accountOpt = accountRepository.findByUsername(username);
-        Optional<Role> roleOpt = roleRepository.findByName(roleName);
-        
-        if (accountOpt.isPresent() && roleOpt.isPresent()) {
-            Account account = accountOpt.get();
-            Role role = roleOpt.get();
-            account.addRole(role);
-            accountRepository.save(account);
-            log.info("Role {} assigned to account: {}", roleName, username);
-        } else {
-            log.warn("Could not assign role {} to account {}: account or role not found", roleName, username);
-        }
-    }
 
     @Transactional
     public Map<String, Object> createResellerAccount(ResellerRegistrationRequest request) {
         log.info("Creating reseller account for username: {}", request.getUsername());
-        log.info("DEBUG: Starting createResellerAccount method");
         
         validateUniqueUsername(request.getUsername());
         
@@ -103,7 +74,6 @@ public class AccountService {
             Account account = createAccount(request);
             Long resellerId = createResellerProfile(account.getId(), request);
             sendWelcomeEmail(request);
-            log.info("About to send registration notification for account: {} username: {}", account.getId(), request.getUsername());
             sendRegistrationNotification(account.getId(), request.getUsername());
             
             return buildRegistrationResult(account.getId(), resellerId);
@@ -188,13 +158,12 @@ public class AccountService {
     }
     
     private void sendRegistrationNotification(Long accountId, String username) {
-        log.info("Starting sendRegistrationNotification for account: {} username: {}", accountId, username);
         try {
             notificationService.sendResellerRegistrationNotification(
-                accountId.toString(),
+                username,  // Send username instead of accountId for principal matching
                 username
             );
-            log.info("Successfully called sendResellerRegistrationNotification for account: {}", accountId);
+            log.info("Registration notification sent for account: {} (username: {})", accountId, username);
         } catch (Exception e) {
             log.warn("Failed to send registration notification for reseller: {}, but registration succeeded", 
                      username, e);

@@ -1,5 +1,7 @@
 package com.devwonder.api_gateway.filter;
 
+import com.devwonder.api_gateway.constant.SecurityConstants;
+import com.devwonder.api_gateway.util.RequestUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -21,22 +23,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class RateLimitingGlobalFilter implements GlobalFilter, Ordered {
     
-    private static final int MAX_REQUESTS_PER_MINUTE = 60;
-    private static final long WINDOW_SIZE_MILLIS = 60 * 1000; // 1 minute
-    
     private final ConcurrentHashMap<String, RequestCounter> requestCounts = new ConcurrentHashMap<>();
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String clientId = getClientIdentifier(request);
+        String clientId = RequestUtil.getClientIpAddress(request);
         String path = request.getPath().value();
-        
-        log.info("RateLimitingGlobalFilter: Processing request from {} to path: {}", clientId, path);
         
         // Skip rate limiting for health checks and static resources
         if (path.contains("/actuator/") || path.contains("/health")) {
-            log.debug("RateLimitingGlobalFilter: Skipping rate limiting for path: {}", path);
             return chain.filter(exchange);
         }
         
@@ -46,38 +42,21 @@ public class RateLimitingGlobalFilter implements GlobalFilter, Ordered {
         
         synchronized (counter) {
             // Reset counter if window has passed
-            if (now - counter.windowStart > WINDOW_SIZE_MILLIS) {
+            if (now - counter.windowStart > SecurityConstants.WINDOW_SIZE_MILLIS) {
                 counter.reset(now);
             }
             
-            if (counter.count.get() >= MAX_REQUESTS_PER_MINUTE) {
-                log.warn("Rate limit exceeded for client: {} on path: {}", clientId, path);
+            if (counter.count.get() >= SecurityConstants.MAX_REQUESTS_PER_MINUTE) {
+                log.warn("Rate limit exceeded for client: {}", clientId);
                 return handleRateLimitExceeded(exchange);
             }
             
             counter.count.incrementAndGet();
-            log.debug("RateLimitingGlobalFilter: Request count for client {}: {}/{}", clientId, counter.count.get(), MAX_REQUESTS_PER_MINUTE);
         }
         
         return chain.filter(exchange);
     }
 
-    private String getClientIdentifier(ServerHttpRequest request) {
-        // Try to get client IP from various headers
-        String xForwardedFor = request.getHeaders().getFirst("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        
-        String xRealIp = request.getHeaders().getFirst("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        
-        var remoteAddress = request.getRemoteAddress();
-        return remoteAddress != null ? 
-            remoteAddress.getAddress().getHostAddress() : "unknown";
-    }
 
     private Mono<Void> handleRateLimitExceeded(ServerWebExchange exchange) {
         ServerHttpResponse response = exchange.getResponse();

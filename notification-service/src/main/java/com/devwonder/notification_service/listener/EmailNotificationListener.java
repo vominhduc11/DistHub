@@ -5,8 +5,6 @@ import com.devwonder.notification_service.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
@@ -22,14 +20,8 @@ public class EmailNotificationListener {
         groupId = "notification-service-group",
         containerFactory = "emailNotificationKafkaListenerContainerFactory"
     )
-    public void handleEmailNotification(
-            @Payload EmailNotificationEvent event,
-            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
-            @Header(KafkaHeaders.OFFSET) long offset) {
-        
-        log.info("Received email notification event from topic: {}, partition: {}, offset: {}", topic, partition, offset);
-        log.info("Event type: {}, recipient: {}", event.getEventType(), event.getTo());
+    public void handleEmailNotification(@Payload EmailNotificationEvent event) {
+        log.info("Processing email notification: {} for {}", event.getEventType(), event.getTo());
         
         try {
             switch (event.getEventType()) {
@@ -40,10 +32,9 @@ public class EmailNotificationListener {
                     emailService.sendEmail(event);
                     break;
             }
-            log.info("Successfully processed email notification for: {}", event.getTo());
         } catch (Exception e) {
-            log.error("Failed to process email notification for: {} - Error: {}", event.getTo(), e.getMessage(), e);
-            // TODO: Implement retry logic or dead letter queue
+            log.error("Failed to process email notification for: {}", event.getTo(), e);
+            throw e;
         }
     }
 }

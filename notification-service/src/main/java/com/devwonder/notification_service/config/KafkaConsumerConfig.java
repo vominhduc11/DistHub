@@ -21,24 +21,28 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Bean
-    public ConsumerFactory<String, EmailNotificationEvent> emailNotificationConsumerFactory() {
+    private Map<String, Object> getBaseConsumerConfig(String groupId) {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-service-group");
+        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "com.devwonder.auth_service.dto,com.devwonder.notification_service.dto");
         configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
-        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, EmailNotificationEvent.class.getName());
-        configProps.put(JsonDeserializer.TYPE_MAPPINGS, "com.devwonder.auth_service.dto.EmailNotificationEvent:com.devwonder.notification_service.dto.EmailNotificationEvent");
         configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
         configProps.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 30000);
         configProps.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 10000);
         configProps.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 30000);
         configProps.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, 30000);
-        
+        return configProps;
+    }
+
+    @Bean
+    public ConsumerFactory<String, EmailNotificationEvent> emailNotificationConsumerFactory() {
+        Map<String, Object> configProps = getBaseConsumerConfig("notification-service-group");
+        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, EmailNotificationEvent.class.getName());
+        configProps.put(JsonDeserializer.TYPE_MAPPINGS, "com.devwonder.auth_service.dto.EmailNotificationEvent:com.devwonder.notification_service.dto.EmailNotificationEvent");
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
 
@@ -51,22 +55,9 @@ public class KafkaConsumerConfig {
 
     @Bean
     public ConsumerFactory<String, WebSocketNotificationEvent> webSocketNotificationConsumerFactory() {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-service-websocket-group");
-        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        configProps.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        Map<String, Object> configProps = getBaseConsumerConfig("notification-service-websocket-group");
         configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, WebSocketNotificationEvent.class.getName());
         configProps.put(JsonDeserializer.TYPE_MAPPINGS, "com.devwonder.auth_service.dto.WebSocketNotificationEvent:com.devwonder.notification_service.dto.WebSocketNotificationEvent");
-        configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
-        configProps.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, 30000);
-        configProps.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 10000);
-        configProps.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 30000);
-        configProps.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, 30000);
-        
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
 

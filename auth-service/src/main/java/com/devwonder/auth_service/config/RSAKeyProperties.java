@@ -35,18 +35,10 @@ public class RSAKeyProperties {
         
         try {
             KeyFactory keyFactory = KeyFactory.getInstance(RSA_ALGORITHM);
-            
-            // Load and validate private key
             this.privateKey = loadPrivateKey(keyFactory);
-            log.info("Private key loaded successfully");
-            
-            // Load and validate public key
             this.publicKey = loadPublicKey(keyFactory);
-            log.info("Public key loaded successfully");
-            
-            // Validate key pair
             validateKeyPair();
-            log.info("RSA key pair validation completed successfully");
+            log.info("RSA key pair initialized successfully");
             
         } catch (NoSuchAlgorithmException e) {
             log.error("RSA algorithm not available", e);

@@ -5,8 +5,6 @@ import com.devwonder.notification_service.service.WebSocketNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
@@ -22,14 +20,8 @@ public class WebSocketNotificationListener {
         groupId = "notification-service-websocket-group",
         containerFactory = "webSocketNotificationKafkaListenerContainerFactory"
     )
-    public void handleWebSocketNotification(
-            @Payload WebSocketNotificationEvent event,
-            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
-            @Header(KafkaHeaders.OFFSET) long offset) {
-        
-        log.info("Received websocket notification event from topic: {}, partition: {}, offset: {}", topic, partition, offset);
-        log.info("Event type: {}, user: {}", event.getEventType(), event.getUserId());
+    public void handleWebSocketNotification(@Payload WebSocketNotificationEvent event) {
+        log.info("Processing WebSocket notification: {} for user: {}", event.getEventType(), event.getUserId());
         
         try {
             switch (event.getEventType()) {
@@ -37,12 +29,11 @@ public class WebSocketNotificationListener {
                     webSocketService.sendResellerRegistrationNotification(event);
                     break;
                 default:
-                    webSocketService.sendNotification(event);
+                    webSocketService.sendUserNotification(event.getUserId(), event);
                     break;
             }
-            log.info("Successfully processed websocket notification for user: {}", event.getUserId());
         } catch (Exception e) {
-            log.error("Failed to process websocket notification for user: {} - Error: {}", event.getUserId(), e.getMessage(), e);
+            log.error("Failed to process WebSocket notification for user: {}", event.getUserId(), e);
         }
     }
 }

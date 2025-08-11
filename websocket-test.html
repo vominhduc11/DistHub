@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏢 DistHub - Đăng Ký Làm Đại Lý</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #cce7ff; color: #004085; border: 1px solid #b6d4fe; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: scroll;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .notification {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #555; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🏢 DistHub - Đăng Ký Làm Đại Lý</h1>
+    
+    <!-- Reseller Registration Form -->
+    <div class="container">
+        <h2>📝 Đăng Ký Đại Lý Mới</h2>
+        <div class="form-group">
+            <label for="resellerUsername">Tên đăng nhập:</label>
+            <input type="text" id="resellerUsername" placeholder="Nhập tên đăng nhập">
+        </div>
+        <div class="form-group">
+            <label for="resellerPassword">Mật khẩu:</label>
+            <input type="password" id="resellerPassword" value="password123" placeholder="Nhập mật khẩu">
+        </div>
+        <div class="form-group">
+            <label for="resellerName">Tên công ty:</label>
+            <input type="text" id="resellerName" placeholder="Tên công ty đại lý">
+        </div>
+        <div class="form-group">
+            <label for="resellerEmail">Email:</label>
+            <input type="email" id="resellerEmail" placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+            <label for="resellerPhone">Số điện thoại:</label>
+            <input type="tel" id="resellerPhone" placeholder="09xxxxxxxx">
+        </div>
+        <div class="form-group">
+            <label for="resellerAddress">Địa chỉ:</label>
+            <input type="text" id="resellerAddress" placeholder="Số nhà, tên đường">
+        </div>
+        <div class="form-group">
+            <label for="resellerDistrict">Quận/Huyện:</label>
+            <input type="text" id="resellerDistrict" placeholder="Quận/Huyện">
+        </div>
+        <div class="form-group">
+            <label for="resellerCity">Thành phố:</label>
+            <input type="text" id="resellerCity" value="Hồ Chí Minh" placeholder="Thành phố">
+        </div>
+        <button onclick="registerReseller()">🏢 Đăng Ký Làm Đại Lý</button>
+        <div id="registrationStatus"></div>
+    </div>
+
+    <!-- Login Section for Admin/Existing Users -->
+    <div class="container">
+        <h2>🔑 Đăng Nhập (Dành cho Admin/Đại lý hiện tại)</h2>
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" value="testreseller03" placeholder="testreseller03 hoặc testreseller04">
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" value="password123" placeholder="password123">
+        </div>
+        <button onclick="login()">Đăng Nhập</button>
+        <div id="loginStatus"></div>
+        <div class="form-group">
+            <label for="jwtToken">JWT Token:</label>
+            <input type="text" id="jwtToken" readonly placeholder="Token sẽ hiển thị sau khi đăng nhập">
+        </div>
+    </div>
+
+    <!-- WebSocket Connection Section -->
+    <div class="container">
+        <h2>🔗 Kết Nối Thông Báo Real-time</h2>
+        <p><strong>Hướng dẫn:</strong> Đăng nhập trước, sau đó kết nối WebSocket để nhận thông báo real-time khi có đăng ký đại lý mới.</p>
+        <button id="connectBtn" onclick="connectWebSocket()" disabled>🔗 Kết Nối WebSocket</button>
+        <button id="disconnectBtn" onclick="disconnectWebSocket()" disabled>❌ Ngắt Kết Nối</button>
+        <div id="wsStatus"></div>
+        
+        <h3>📬 Đăng Ký Nhận Thông Báo:</h3>
+        <button id="subscribePersonal" onclick="subscribeToPersonal()" disabled>📨 Nhận Thông Báo Cá Nhân</button>
+        <button id="subscribeBroadcast" onclick="subscribeToBroadcast()" disabled>📢 Nhận Thông Báo Tổng Quát</button>
+    </div>
+
+    <!-- Notifications Section -->
+    <div class="container">
+        <h2>📨 Thông Báo Nhận Được</h2>
+        <p>Các thông báo về đăng ký đại lý mới sẽ hiển thị ở đây khi có người đăng ký.</p>
+        <div id="notifications"></div>
+        <button onclick="clearNotifications()">🗑️ Xóa Thông Báo</button>
+    </div>
+
+    <!-- Logs Section -->
+    <div class="container">
+        <h2>📋 Nhật Ký Kết Nối</h2>
+        <div id="logs" class="log"></div>
+        <button onclick="clearLogs()">🗑️ Xóa Nhật Ký</button>
+    </div>
+
+    <script>
+        let stompClient = null;
+        let jwtToken = null;
+        let username = null;
+
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function setStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        async function registerReseller() {
+            const formData = {
+                username: document.getElementById('resellerUsername').value,
+                password: document.getElementById('resellerPassword').value,
+                name: document.getElementById('resellerName').value,
+                email: document.getElementById('resellerEmail').value,
+                phone: document.getElementById('resellerPhone').value,
+                address: document.getElementById('resellerAddress').value,
+                district: document.getElementById('resellerDistrict').value,
+                city: document.getElementById('resellerCity').value
+            };
+
+            // Validate required fields
+            if (!formData.username || !formData.password || !formData.name || 
+                !formData.email || !formData.phone || !formData.address || 
+                !formData.district || !formData.city) {
+                setStatus('registrationStatus', '❌ Vui lòng điền đầy đủ thông tin', 'error');
+                return;
+            }
+
+            try {
+                log(`Đăng ký đại lý mới: ${formData.username}`);
+                const response = await fetch('http://localhost:8081/api/auth/register-reseller', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setStatus('registrationStatus', 
+                        `✅ Đăng ký đại lý thành công!<br>
+                        <strong>Account ID:</strong> ${data.accountId}<br>
+                        <strong>Reseller ID:</strong> ${data.resellerId}<br>
+                        <strong>Thời gian:</strong> ${new Date(data.timestamp).toLocaleString()}`, 'success');
+                    
+                    log(`✅ Đăng ký thành công - Account: ${data.accountId}, Reseller: ${data.resellerId}`);
+                    
+                    // Clear form
+                    document.getElementById('resellerUsername').value = '';
+                    document.getElementById('resellerName').value = '';
+                    document.getElementById('resellerEmail').value = '';
+                    document.getElementById('resellerPhone').value = '';
+                    document.getElementById('resellerAddress').value = '';
+                    document.getElementById('resellerDistrict').value = '';
+
+                    // Suggest login
+                    setStatus('registrationStatus', 
+                        document.getElementById('registrationStatus').innerHTML + 
+                        '<br><br>💡 <strong>Gợi ý:</strong> Bây giờ bạn có thể đăng nhập với tài khoản vừa tạo để nhận thông báo real-time!', 'success');
+
+                } else {
+                    const errorData = await response.json();
+                    setStatus('registrationStatus', `❌ Đăng ký thất bại: ${errorData.message || 'Lỗi không xác định'}`, 'error');
+                    log(`❌ Đăng ký thất bại: ${response.status} - ${errorData.message}`);
+                }
+            } catch (error) {
+                setStatus('registrationStatus', `❌ Lỗi kết nối: ${error.message}`, 'error');
+                log(`❌ Lỗi đăng ký: ${error.message}`);
+            }
+        }
+
+        async function login() {
+            const usernameInput = document.getElementById('username').value;
+            const passwordInput = document.getElementById('password').value;
+
+            if (!usernameInput || !passwordInput) {
+                setStatus('loginStatus', '❌ Vui lòng nhập tên đăng nhập và mật khẩu', 'error');
+                return;
+            }
+
+            try {
+                log(`Attempting login for user: ${usernameInput}`);
+                const response = await fetch('http://localhost:8081/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: usernameInput,
+                        password: passwordInput
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    jwtToken = data.token;
+                    username = data.username;
+                    
+                    document.getElementById('jwtToken').value = jwtToken;
+                    setStatus('loginStatus', `✅ Đăng nhập thành công! Chào mừng ${data.username} (${data.role})`, 'success');
+                    document.getElementById('connectBtn').disabled = false;
+                    log(`✅ Đăng nhập thành công - Username: ${data.username}, Role: ${data.role}`);
+                } else {
+                    const errorData = await response.json();
+                    setStatus('loginStatus', `❌ Đăng nhập thất bại: ${errorData.error || 'Thông tin đăng nhập không đúng'}`, 'error');
+                    log(`❌ Đăng nhập thất bại: ${response.status} - ${errorData.error || 'Invalid credentials'}`);
+                }
+            } catch (error) {
+                setStatus('loginStatus', `❌ Lỗi kết nối: ${error.message}`, 'error');
+                log(`❌ Lỗi đăng nhập: ${error.message}`);
+            }
+        }
+
+        function connectWebSocket() {
+            if (!jwtToken) {
+                setStatus('wsStatus', '❌ Vui lòng đăng nhập trước để lấy JWT token', 'error');
+                return;
+            }
+
+            log('Connecting to WebSocket...');
+            const socket = new SockJS('http://localhost:8084/ws-notifications');
+            stompClient = new StompJs.Client({
+                webSocketFactory: () => socket,
+                connectHeaders: {
+                    'Authorization': `Bearer ${jwtToken}`
+                },
+                debug: (str) => {
+                    log(`STOMP Debug: ${str}`);
+                },
+                onConnect: (frame) => {
+                    log('🔗 WebSocket đã kết nối!');
+                    setStatus('wsStatus', `✅ Đã kết nối WebSocket với tài khoản ${username}`, 'success');
+                    
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                    document.getElementById('subscribePersonal').disabled = false;
+                    document.getElementById('subscribeBroadcast').disabled = false;
+                },
+                onStompError: (frame) => {
+                    log(`❌ STOMP Error: ${frame.headers['message']}`);
+                    setStatus('wsStatus', `❌ STOMP Error: ${frame.headers['message']}`, 'error');
+                },
+                onWebSocketError: (event) => {
+                    log(`❌ WebSocket Error: ${event}`);
+                    setStatus('wsStatus', `❌ WebSocket Error: ${event}`, 'error');
+                },
+                onDisconnect: (frame) => {
+                    log('🔌 WebSocket đã ngắt kết nối');
+                    setStatus('wsStatus', '⚡ Đã ngắt kết nối WebSocket', 'info');
+                    resetButtons();
+                }
+            });
+
+            stompClient.activate();
+        }
+
+        function disconnectWebSocket() {
+            if (stompClient) {
+                stompClient.deactivate();
+                resetButtons();
+                log('🔌 WebSocket đã được người dùng ngắt kết nối');
+            }
+        }
+
+        function resetButtons() {
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+            document.getElementById('subscribePersonal').disabled = true;
+            document.getElementById('subscribeBroadcast').disabled = true;
+        }
+
+        function subscribeToPersonal() {
+            if (!stompClient || !stompClient.connected) {
+                log('❌ Chưa kết nối WebSocket');
+                return;
+            }
+
+            log('📬 Subscribing to personal notifications: /user/queue/notifications');
+            stompClient.subscribe('/user/queue/notifications', (message) => {
+                log('📨 Received personal notification!');
+                const notification = JSON.parse(message.body);
+                displayNotification('Personal', notification);
+            });
+            
+            setStatus('wsStatus', `✅ Đã đăng ký nhận thông báo cá nhân cho ${username}`, 'success');
+        }
+
+        function subscribeToBroadcast() {
+            if (!stompClient || !stompClient.connected) {
+                log('❌ Chưa kết nối WebSocket');
+                return;
+            }
+
+            log('📡 Subscribing to broadcast notifications: /topic/notifications/broadcast');
+            stompClient.subscribe('/topic/notifications/broadcast', (message) => {
+                log('📢 Received broadcast notification!');
+                const notification = JSON.parse(message.body);
+                displayNotification('Broadcast', notification);
+            });
+            
+            setStatus('wsStatus', `✅ Đã đăng ký nhận thông báo tổng quát`, 'success');
+        }
+
+        function displayNotification(type, notification) {
+            const notificationsDiv = document.getElementById('notifications');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const notificationHtml = `
+                <div class="notification">
+                    <strong>[${timestamp}] ${type} Notification</strong><br>
+                    <strong>Event:</strong> ${notification.eventType}<br>
+                    <strong>User ID:</strong> ${notification.userId}<br>
+                    <strong>Message:</strong> ${notification.message || 'N/A'}<br>
+                    <strong>Data:</strong> <pre>${JSON.stringify(notification, null, 2)}</pre>
+                </div>
+            `;
+            
+            notificationsDiv.innerHTML = notificationHtml + notificationsDiv.innerHTML;
+            log(`📨 Notification displayed: ${notification.eventType} for user ${notification.userId}`);
+        }
+
+
+        function clearNotifications() {
+            document.getElementById('notifications').innerHTML = '';
+            log('🗑️ Đã xóa thông báo');
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        // Initialize
+        log('🏢 DistHub Reseller Registration System initialized');
+        log('📋 Hướng dẫn: 1) Đăng ký tài khoản mới → 2) Đăng nhập → 3) Kết nối WebSocket → 4) Nhận thông báo real-time');
+    </script>
+</body>
+</html>

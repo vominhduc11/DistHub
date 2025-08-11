@@ -6,6 +6,7 @@ import com.devwonder.auth_service.dto.ResellerRegistrationRequest;
 import com.devwonder.auth_service.model.Account;
 import com.devwonder.auth_service.service.AccountService;
 import com.devwonder.auth_service.util.JwtUtil;
+import com.devwonder.auth_service.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,7 +30,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request) {
-        String clientIp = getClientIpAddress(request);
+        String clientIp = RequestUtil.getClientIpAddress(request);
         log.info("Login attempt for user: {} from IP: {}", loginRequest.getUsername(), clientIp);
         
         Optional<Account> accountOpt = accountService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
@@ -40,20 +42,25 @@ public class AuthController {
         }
         
         Account account = accountOpt.get();
-        String roleString = account.getRoles().isEmpty() ? "USER" : 
-            account.getRoles().stream().findFirst().get().getName();
-        String token = jwtUtil.generateToken(account.getUsername(), roleString);
+        List<String> roles = account.getRoles().stream()
+            .map(role -> role.getName())
+            .toList();
+        if (roles.isEmpty()) {
+            roles = List.of("CUSTOMER");
+        }
+        String token = jwtUtil.generateToken(account.getUsername(), roles);
         
         // Create comprehensive response with account type information
+        String primaryRole = roles.get(0); // First role as primary
         LoginResponse response = new LoginResponse();
         response.setToken(token);
         response.setUsername(account.getUsername());
-        response.setRole(roleString);
-        response.setAccountType(roleString); // Use role as account type
+        response.setRole(primaryRole);
+        response.setAccountType(primaryRole); // Use primary role as account type
         response.setAccountId(account.getId());
         
-        log.info("Login successful for account: {} (role: {}) from IP: {}", 
-            account.getUsername(), roleString, clientIp);
+        log.info("Login successful for account: {} (roles: {}) from IP: {}", 
+            account.getUsername(), roles, clientIp);
         return ResponseEntity.ok(response);
     }
 
@@ -61,12 +68,12 @@ public class AuthController {
     public ResponseEntity<?> validateToken(@RequestParam String token) {
         if (jwtUtil.validateToken(token)) {
             String username = jwtUtil.extractUsername(token);
-            String role = jwtUtil.extractRole(token);
-            
+            List<String> roles = jwtUtil.extractRoles(token);
+        
             return ResponseEntity.ok(Map.of(
                 "valid", true,
                 "username", username,
-                "role", role,
+                "roles", roles,
                 "timestamp", System.currentTimeMillis()
             ));
         } else {
@@ -78,7 +85,7 @@ public class AuthController {
     @PostMapping("/register-reseller")
     public ResponseEntity<?> registerReseller(@Valid @RequestBody ResellerRegistrationRequest request, 
                                             HttpServletRequest httpRequest) {
-        String clientIp = getClientIpAddress(httpRequest);
+        String clientIp = RequestUtil.getClientIpAddress(httpRequest);
         log.info("Reseller registration attempt from IP: {}", clientIp);
         
         Map<String, Object> result = accountService.createResellerAccount(request);
@@ -92,17 +99,4 @@ public class AuthController {
         ));
     }
 
-    private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        
-        return request.getRemoteAddr();
-    }
 }

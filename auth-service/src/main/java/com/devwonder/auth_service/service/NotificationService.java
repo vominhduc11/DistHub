@@ -37,21 +37,4 @@ public class NotificationService {
         }
     }
 
-    public void sendEmailNotification(EmailNotificationEvent event) {
-        try {
-            kafkaTemplate.send(EMAIL_NOTIFICATION_TOPIC, event.getUsername(), event);
-            log.info("Email notification event sent: {} to {}", event.getEventType(), event.getTo());
-        } catch (Exception e) {
-            log.error("Failed to send email notification event: {}", event.getEventType(), e);
-        }
-    }
-
-    public void sendWebSocketNotification(WebSocketNotificationEvent event) {
-        try {
-            kafkaTemplate.send(WEBSOCKET_NOTIFICATION_TOPIC, event.getUserId(), event);
-            log.info("WebSocket notification event sent: {} to user {}", event.getEventType(), event.getUserId());
-        } catch (Exception e) {
-            log.error("Failed to send WebSocket notification event: {}", event.getEventType(), e);
-        }
-    }
 }

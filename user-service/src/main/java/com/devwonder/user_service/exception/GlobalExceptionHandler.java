@@ -1,6 +1,7 @@
 package com.devwonder.user_service.exception;
 
 import com.devwonder.user_service.dto.ErrorResponse;
+import com.devwonder.user_service.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         
-        log.warn("Validation errors from {}: {}", getClientIp(request), errors);
+        log.warn("Validation errors from {}: {}", RequestUtil.getClientIpAddress(request), errors);
         
         ErrorResponse errorResponse = new ErrorResponse(
             "VALIDATION_ERROR", 
@@ -45,7 +46,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleIllegalArgument(
             IllegalArgumentException ex, HttpServletRequest request) {
         
-        log.warn("Validation error from {}: {}", getClientIp(request), ex.getMessage());
+        log.warn("Validation error from {}: {}", RequestUtil.getClientIpAddress(request), ex.getMessage());
         
         ErrorResponse errorResponse = new ErrorResponse(
             "VALIDATION_ERROR",
@@ -60,7 +61,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException ex, HttpServletRequest request) {
         
-        log.warn("Data integrity violation from {}: {}", getClientIp(request), ex.getMessage());
+        log.warn("Data integrity violation from {}: {}", RequestUtil.getClientIpAddress(request), ex.getMessage());
         
         String message = "Resource already exists or violates data constraints";
         if (ex.getMessage() != null) {
@@ -86,7 +87,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleRuntimeException(
             RuntimeException ex, HttpServletRequest request) {
         
-        log.error("Runtime error from {}: {}", getClientIp(request), ex.getMessage(), ex);
+        log.error("Runtime error from {}: {}", RequestUtil.getClientIpAddress(request), ex.getMessage(), ex);
         
         String message = "Service temporarily unavailable";
         
@@ -114,7 +115,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConstraintViolation(
             ConstraintViolationException ex, HttpServletRequest request) {
         
-        log.warn("Constraint violation from {}: {}", getClientIp(request), ex.getMessage());
+        log.warn("Constraint violation from {}: {}", RequestUtil.getClientIpAddress(request), ex.getMessage());
         
         ErrorResponse errorResponse = new ErrorResponse(
             "CONSTRAINT_VIOLATION",
@@ -129,7 +130,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex, HttpServletRequest request) {
         
-        log.error("Unexpected error from {}: {}", getClientIp(request), ex.getMessage(), ex);
+        log.error("Unexpected error from {}: {}", RequestUtil.getClientIpAddress(request), ex.getMessage(), ex);
         
         ErrorResponse errorResponse = new ErrorResponse(
             "INTERNAL_ERROR",
@@ -138,19 +139,5 @@ public class GlobalExceptionHandler {
         );
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-    }
-    
-    private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        
-        return request.getRemoteAddr();
     }
 }

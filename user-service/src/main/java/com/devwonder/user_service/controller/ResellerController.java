@@ -23,11 +23,9 @@ public class ResellerController {
 
     @PostMapping("/resellers")
     public ResponseEntity<?> createReseller(@Valid @RequestBody ResellerCreateRequest request) {
-        log.info("Creating reseller for account ID: {}", request.getAccountId());
-        
         Long resellerId = resellerService.createReseller(request);
         
-        log.info("Reseller created successfully with ID: {} for account: {}", resellerId, request.getAccountId());
+        log.info("Reseller created with ID: {} for account: {}", resellerId, request.getAccountId());
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
             "message", "Reseller created successfully",
             "resellerId", resellerId,
@@ -37,11 +35,8 @@ public class ResellerController {
     
     @GetMapping("/resellers")
     public ResponseEntity<List<ResellerResponse>> getAllResellers() {
-        log.info("Fetching all resellers");
-        
         List<ResellerResponse> resellers = resellerService.getAllResellers();
-        
-        log.info("Found {} resellers", resellers.size());
+        log.info("Retrieved {} resellers", resellers.size());
         return ResponseEntity.ok(resellers);
     }
 }

@@ -21,24 +21,18 @@ public class ResellerService {
 
     @Transactional
     public Long createReseller(ResellerCreateRequest request) {
-        log.info("Creating reseller for account ID: {}", request.getAccountId());
-        
-        // Check if reseller already exists for this account
         if (resellerRepository.existsByAccountId(request.getAccountId())) {
             throw new IllegalArgumentException("Reseller already exists for account ID: " + request.getAccountId());
         }
         
-        // Check if email already exists
         if (resellerRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists: " + request.getEmail());
         }
         
-        // Check if phone already exists
         if (resellerRepository.existsByPhone(request.getPhone())) {
             throw new IllegalArgumentException("Phone number already exists: " + request.getPhone());
         }
         
-        // Create new reseller
         Reseller reseller = new Reseller();
         reseller.setAccountId(request.getAccountId());
         reseller.setName(request.getName());
@@ -49,16 +43,11 @@ public class ResellerService {
         reseller.setEmail(request.getEmail());
         
         Reseller savedReseller = resellerRepository.save(reseller);
-        
-        log.info("Reseller created successfully with ID: {} for account: {}", savedReseller.getAccountId(), request.getAccountId());
         return savedReseller.getAccountId();
     }
     
     public List<ResellerResponse> getAllResellers() {
-        log.info("Fetching all resellers");
-        
         List<Reseller> resellers = resellerRepository.findAll();
-        
         return resellers.stream()
             .map(this::mapToResellerResponse)
             .collect(Collectors.toList());

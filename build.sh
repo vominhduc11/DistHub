@@ -62,4 +62,11 @@ cd language-service
 cp target/language-service-0.0.1-SNAPSHOT.jar ../build/jars/language-service.jar
 cd ..
 
+# Build content-management-service
+echo -e "${BLUE}📦 Building content-management-service...${NC}"
+cd content-management-service
+./mvnw clean install -DskipTests
+cp target/content-management-service-0.0.1-SNAPSHOT.jar ../build/jars/content-management-service.jar
+cd ..
+
 echo -e "${GREEN}✅ Build thành công! Tất cả file JAR đã được copy vào build/jars/.${NC}"

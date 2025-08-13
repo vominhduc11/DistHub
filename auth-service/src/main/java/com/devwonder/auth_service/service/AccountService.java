@@ -30,11 +30,12 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
 
-    public Optional<Account> authenticate(String username, String password) {
-        log.debug("Attempting authentication for account: {}", username);
+    public Optional<Account> authenticate(String username, String password, String requiredRole) {
+        log.debug("Attempting authentication for account: {} with required role: {}", username, requiredRole);
         
-        if (username == null || password == null || username.trim().isEmpty() || password.trim().isEmpty()) {
-            log.warn("Authentication failed: empty username or password");
+        if (username == null || password == null || requiredRole == null || 
+            username.trim().isEmpty() || password.trim().isEmpty() || requiredRole.trim().isEmpty()) {
+            log.warn("Authentication failed: empty username, password, or role");
             return Optional.empty();
         }
 
@@ -51,7 +52,16 @@ public class AccountService {
             return Optional.empty();
         }
 
-        log.info("Authentication successful for account: {}", username);
+        // Check if account has the required role
+        boolean hasRequiredRole = account.getRoles().stream()
+            .anyMatch(role -> role.getName().equalsIgnoreCase(requiredRole));
+            
+        if (!hasRequiredRole) {
+            log.warn("Authentication failed: account {} does not have required role: {}", username, requiredRole);
+            return Optional.empty();
+        }
+
+        log.info("Authentication successful for account: {} with role: {}", username, requiredRole);
         return Optional.of(account);
     }
 
@@ -62,7 +72,6 @@ public class AccountService {
     public boolean existsByUsername(String username) {
         return accountRepository.existsByUsername(username);
     }
-
 
     @Transactional
     public Map<String, Object> createResellerAccount(ResellerRegistrationRequest request) {

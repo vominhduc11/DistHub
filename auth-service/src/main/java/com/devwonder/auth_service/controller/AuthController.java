@@ -33,7 +33,7 @@ public class AuthController {
         String clientIp = RequestUtil.getClientIpAddress(request);
         log.info("Login attempt for user: {} from IP: {}", loginRequest.getUsername(), clientIp);
         
-        Optional<Account> accountOpt = accountService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
+        Optional<Account> accountOpt = accountService.authenticate(loginRequest.getUsername(), loginRequest.getPassword(), loginRequest.getRole());
         
         if (accountOpt.isEmpty()) {
             log.warn("Login failed for account: {} from IP: {}", loginRequest.getUsername(), clientIp);
@@ -98,5 +98,4 @@ public class AuthController {
             "timestamp", System.currentTimeMillis()
         ));
     }
-
 }

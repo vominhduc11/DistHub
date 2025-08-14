@@ -3,6 +3,7 @@ package com.devwonder.auth_service.controller;
 import com.devwonder.auth_service.dto.LoginRequest;
 import com.devwonder.auth_service.dto.LoginResponse;
 import com.devwonder.auth_service.dto.ResellerRegistrationRequest;
+import com.devwonder.auth_service.dto.CustomerRegistrationRequest;
 import com.devwonder.auth_service.model.Account;
 import com.devwonder.auth_service.service.AccountService;
 import com.devwonder.auth_service.util.JwtUtil;
@@ -95,6 +96,23 @@ public class AuthController {
             "message", "Reseller registration successful",
             "accountId", result.get("accountId"),
             "resellerId", result.get("resellerId"),
+            "timestamp", System.currentTimeMillis()
+        ));
+    }
+
+    @PostMapping("/register-customer")
+    public ResponseEntity<?> registerCustomer(@Valid @RequestBody CustomerRegistrationRequest request, 
+                                            HttpServletRequest httpRequest) {
+        String clientIp = RequestUtil.getClientIpAddress(httpRequest);
+        log.info("Customer registration attempt from IP: {}", clientIp);
+        
+        Map<String, Object> result = accountService.createCustomerAccount(request);
+        
+        log.info("Customer registration successful for: {} from IP: {}", request.getUsername(), clientIp);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+            "message", "Customer registration successful",
+            "accountId", result.get("accountId"),
+            "customerId", result.get("customerId"),
             "timestamp", System.currentTimeMillis()
         ));
     }

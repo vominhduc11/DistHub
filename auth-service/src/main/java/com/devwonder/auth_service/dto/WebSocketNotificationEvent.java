@@ -26,4 +26,15 @@ public class WebSocketNotificationEvent {
             System.currentTimeMillis()
         );
     }
+    
+    public static WebSocketNotificationEvent createCustomerRegistrationEvent(String userId, String userName) {
+        return new WebSocketNotificationEvent(
+            userId,
+            "Registration Successful",
+            "Your customer account has been successfully created. Welcome to DistHub!",
+            "SUCCESS",
+            "CUSTOMER_REGISTRATION",
+            System.currentTimeMillis()
+        );
+    }
 }

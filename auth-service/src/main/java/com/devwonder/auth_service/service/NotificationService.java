@@ -37,4 +37,14 @@ public class NotificationService {
         }
     }
 
+    public void sendCustomerRegistrationNotification(String userId, String userName) {
+        try {
+            WebSocketNotificationEvent event = WebSocketNotificationEvent.createCustomerRegistrationEvent(userId, userName);
+            kafkaTemplate.send(WEBSOCKET_NOTIFICATION_TOPIC, userId, event);
+            log.info("WebSocket notification event sent for customer registration: {} (userId: {})", userName, userId);
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket notification event for customer: {}", userName, e);
+        }
+    }
+
 }

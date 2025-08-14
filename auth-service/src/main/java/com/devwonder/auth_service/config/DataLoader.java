@@ -5,11 +5,13 @@ import com.devwonder.auth_service.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Order(1)
 public class DataLoader implements CommandLineRunner {
 
     private final RoleRepository roleRepository;

@@ -1,19 +1,48 @@
-# DistHub - Database Login Info
+# DistHub - Login Information
 
-## PostgreSQL
-- **Host**: `dishub_postgres`
+## Application Accounts
+
+### Admin Account
+- **Username**: `admin`
+- **Password**: `admin123456`
+- **Role**: `ADMIN`
+- **Status**: Active
+- **Note**: Created automatically when auth-service starts for the first time
+
+### Customer Accounts
+- **Username**: `customer01`
+- **Password**: `password123`
+- **Role**: `CUSTOMER`
+- **Status**: Active
+- **AccountId**: 4
+- **Created**: 2025-08-14 04:20:06
+
+- **Username**: `customer02`
+- **Password**: `password123`
+- **Role**: `CUSTOMER`
+- **Status**: Active
+- **AccountId**: 5
+- **Created**: 2025-08-14 04:20:27
+
+## PostgreSQL Database
+- **Host**: `dishub_postgres` (internal) / `localhost` (external)
 - **Port**: `5432`
 - **Username**: `voduc`
 - **Password**: `voduc123`
-- **Databases**: `postgres`
+- **Databases**: 
+  - `auth_db`
+  - `user_db`
+  - `language_db`
+  - `content_management_db`
+  - `notification_db`
 
 ## Redis
 - **Host**: `localhost`
 - **Port**: `6379`
 - **Password**: `voduc123`
 
-## pgAdmin
-- **URL**: http://localhost:8080
+## pgAdmin (Database Management)
+- **URL**: http://localhost:8087
 - **Email**: `admin@dishub.com`
 - **Password**: `admin123`
 

@@ -3,6 +3,8 @@ package com.devwonder.auth_service.service;
 import com.devwonder.auth_service.client.UserServiceClient;
 import com.devwonder.auth_service.dto.ResellerCreateRequest;
 import com.devwonder.auth_service.dto.ResellerRegistrationRequest;
+import com.devwonder.auth_service.dto.CustomerCreateRequest;
+import com.devwonder.auth_service.dto.CustomerRegistrationRequest;
 import com.devwonder.auth_service.model.Account;
 import com.devwonder.auth_service.model.Role;
 import com.devwonder.auth_service.repository.AccountRepository;
@@ -212,5 +214,87 @@ public class AccountService {
         }
         
         return errorMessage;
+    }
+
+    @Transactional
+    public Map<String, Object> createCustomerAccount(CustomerRegistrationRequest request) {
+        log.info("Creating customer account for username: {}", request.getUsername());
+        
+        validateUniqueUsername(request.getUsername());
+        
+        try {
+            Account account = createCustomerAccountEntity(request);
+            Long customerId = createCustomerProfile(account.getId());
+            sendCustomerRegistrationNotification(account.getId(), request.getUsername());
+            
+            return buildCustomerRegistrationResult(account.getId(), customerId);
+        } catch (FeignException e) {
+            throw new IllegalArgumentException(extractUserServiceError(e));
+        } catch (Exception e) {
+            log.error("Error creating customer account for username: {}", request.getUsername(), e);
+            throw new RuntimeException("Failed to create customer account: " + e.getMessage());
+        }
+    }
+    
+    private Account createCustomerAccountEntity(CustomerRegistrationRequest request) {
+        Account account = new Account();
+        account.setUsername(request.getUsername());
+        account.setPassword(passwordEncoder.encode(request.getPassword()));
+        
+        assignCustomerRole(account);
+        
+        Account savedAccount = accountRepository.save(account);
+        log.info("Customer account created with ID: {} for username: {}", savedAccount.getId(), request.getUsername());
+        return savedAccount;
+    }
+    
+    private void assignCustomerRole(Account account) {
+        roleRepository.findByName("CUSTOMER")
+            .ifPresentOrElse(
+                account::addRole,
+                () -> log.warn("CUSTOMER role not found, creating account without role")
+            );
+    }
+    
+    private Long createCustomerProfile(Long accountId) {
+        CustomerCreateRequest customerRequest = new CustomerCreateRequest(accountId);
+        
+        ResponseEntity<Map<String, Object>> response = userServiceClient.createCustomer(customerRequest);
+        
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw new RuntimeException("Failed to create customer profile in user service");
+        }
+        
+        return extractCustomerId(response.getBody(), accountId);
+    }
+    
+    private Long extractCustomerId(Map<String, Object> responseBody, Long accountId) {
+        if (!responseBody.containsKey("customerId")) {
+            throw new RuntimeException("Failed to create customer profile in user service: missing customerId");
+        }
+        
+        Object customerIdObj = responseBody.get("customerId");
+        Long customerId = customerIdObj instanceof Integer ? 
+            ((Integer) customerIdObj).longValue() : (Long) customerIdObj;
+            
+        log.info("Customer profile created with ID: {} for account: {}", customerId, accountId);
+        return customerId;
+    }
+    
+    private void sendCustomerRegistrationNotification(Long accountId, String username) {
+        try {
+            notificationService.sendCustomerRegistrationNotification(username, username);
+            log.info("Registration notification sent for customer account: {} (username: {})", accountId, username);
+        } catch (Exception e) {
+            log.warn("Failed to send registration notification for customer: {}, but registration succeeded", 
+                     username, e);
+        }
+    }
+    
+    private Map<String, Object> buildCustomerRegistrationResult(Long accountId, Long customerId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("accountId", accountId);
+        result.put("customerId", customerId);
+        return result;
     }
 }

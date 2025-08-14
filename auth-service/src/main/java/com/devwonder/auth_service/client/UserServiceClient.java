@@ -1,6 +1,7 @@
 package com.devwonder.auth_service.client;
 
 import com.devwonder.auth_service.dto.ResellerCreateRequest;
+import com.devwonder.auth_service.dto.CustomerCreateRequest;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,4 +14,7 @@ public interface UserServiceClient {
     
     @PostMapping("/user/resellers")
     ResponseEntity<Map<String, Object>> createReseller(@RequestBody ResellerCreateRequest request);
+    
+    @PostMapping("/user/customers")
+    ResponseEntity<Map<String, Object>> createCustomer(@RequestBody CustomerCreateRequest request);
 }

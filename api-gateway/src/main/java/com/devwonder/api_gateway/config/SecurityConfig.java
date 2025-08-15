@@ -40,6 +40,11 @@ public class SecurityConfig {
                 .pathMatchers(HttpMethod.POST, "/api/content/blogs").hasRole("ADMIN")
                 .pathMatchers(HttpMethod.PUT, "/api/content/blogs/**").hasRole("ADMIN")
                 .pathMatchers(HttpMethod.DELETE, "/api/content/blogs/**").hasRole("ADMIN")
+                .pathMatchers(HttpMethod.GET, "/api/products").permitAll()
+                .pathMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .pathMatchers(HttpMethod.POST, "/api/products").hasRole("ADMIN")
+                .pathMatchers(HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
+                .pathMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
                 .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow CORS preflight
                 .pathMatchers("/api/adminanduser/**").access(hasAdminAndCustomerRoles()) // Requires both Admin and Customer roles
                 .pathMatchers("/api/dealer/**").hasRole("DEALER") // Dealer role required

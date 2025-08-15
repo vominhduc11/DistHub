@@ -4,7 +4,8 @@
       "Bash(git push:*)",
       "Bash(./mvnw:*)",
       "Bash(cp:*)",
-      "Bash(docker-compose stop:*)"
+      "Bash(docker-compose stop:*)",
+      "Bash(docker-compose:*)"
     ],
     "deny": []
   }

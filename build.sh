@@ -69,4 +69,11 @@ cd content-management-service
 cp target/content-management-service-0.0.1-SNAPSHOT.jar ../build/jars/content-management-service.jar
 cd ..
 
+# Build product-service
+echo -e "${BLUE}📦 Building product-service...${NC}"
+cd product-service
+./mvnw clean install -DskipTests
+cp target/product-service-0.0.1-SNAPSHOT.jar ../build/jars/product-service.jar
+cd ..
+
 echo -e "${GREEN}✅ Build thành công! Tất cả file JAR đã được copy vào build/jars/.${NC}"

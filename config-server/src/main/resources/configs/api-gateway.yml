@@ -47,3 +47,33 @@ spring:
             - Path=/api/content/**
           filters:
             - StripPrefix=1
+
+        - id: product-service
+          uri: ${PRODUCT_SERVICE_URI}
+          predicates:
+            - Path=/api/products/**
+          filters:
+            - StripPrefix=1
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth Service
+        url: /api/auth/v3/api-docs
+        display-name: "Auth Service API"
+      - name: User Service
+        url: /api/user/v3/api-docs
+        display-name: "User Service API"
+      - name: Product Service
+        url: /api/products/v3/api-docs
+        display-name: "Product Service API"
+      - name: Content Management Service
+        url: /api/content/v3/api-docs
+        display-name: "Content Management Service API"
+      - name: Notification Service
+        url: /api/notification/v3/api-docs
+        display-name: "Notification Service API"
+    path: /swagger-ui.html
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
